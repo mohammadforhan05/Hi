@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ফর্ম বিল্ডার - Firebase Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Loading Spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            display: none;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            margin-left: 20px;
+            font-size: 18px;
+        }
+
+        /* App Header */
+        .app-header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .app-header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-danger { background: #f56565; color: white; }
+        .btn-warning { background: #ed8936; color: white; }
+        .btn-secondary { background: #718096; color: white; }
+        .btn-info { background: #4299e1; color: white; }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Login Page */
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .login-card h2 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .login-card p {
+            color: #718096;
+            margin-bottom: 30px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        /* Forms List */
+        .forms-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-item {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .form-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-item-header h3 {
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .form-item-header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .form-item-meta {
+            color: #718096;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+
+        .form-item-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        /* Question Builder */
+        .questions-list {
+            margin: 20px 0;
+        }
+
+        .question-item {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .question-item:hover {
+            border-color: #667eea;
+        }
+
+        .question-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .question-header input {
+            flex: 1;
+        }
+
+        .question-header select {
+            width: auto;
+            min-width: 200px;
+        }
+
+        .question-image-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .image-preview-box {
+            margin-top: 10px;
+        }
+
+        .image-preview-box img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .options-list {
+            margin: 15px 0;
+        }
+
+        .option-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .option-row input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+        }
+
+        .question-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .add-question-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .add-question-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        /* Form Fill View */
+        .form-fill-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .form-header-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-header-section img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-header-section h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .form-header-section p {
+            color: #718096;
+        }
+
+        .fill-question-item {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .fill-question-item .question-label {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .fill-question-item .required-mark {
+            color: #f56565;
+            margin-left: 5px;
+        }
+
+        .fill-question-item img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .fill-question-item .image-desc {
+            color: #718096;
+            font-size: 14px;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .fill-question-item input[type="text"],
+        .fill-question-item textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .fill-question-item textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .radio-group,
+        .checkbox-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .choice-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .choice-option:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+
+        .choice-option input[type="radio"],
+        .choice-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Success Message */
+        .success-alert {
+            background: #48bb78;
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .success-alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #2d3748;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #718096;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #2d3748;
+        }
+
+        .share-link-container {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .share-link-container input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        /* File Upload */
+        .file-upload-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-label:hover {
+            background: #5568d3;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* Response View */
+        .response-item {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .response-content {
+            display: grid;
+            gap: 15px;
+        }
+
+        .response-qa {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .response-qa .q {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .response-qa .a {
+            color: #2d3748;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .form-item-actions {
+                flex-direction: column;
+            }
+
+            .form-item-actions .btn {
+                width: 100%;
+            }
+
+            .question-header {
+                flex-direction: column;
+            }
+
+            .question-header select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">লোড হচ্ছে...</div>
+    </div>
+
+    <div class="container">
+        <!-- Login Page -->
+        <div id="loginPage" class="page active">
+            <div class="login-container">
+                <div class="login-card">
+                    <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
+                    <h2>অ্যাডমিন লগইন</h2>
+                    <p>অ্যাডমিন প্যানেলে প্রবেশ করতে পাসওয়ার্ড দিন</p>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" placeholder="পাসওয়ার্ড লিখুন" onkeypress="if(event.key==='Enter') attemptLogin()">
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="attemptLogin()">লগইন করুন</button>
+                    <p id="defaultPasswordHint" style="margin-top: 20px; font-size: 12px;">প্রথমবার লগইন? ডিফল্ট পাসওয়ার্ড: <strong>admin123</strong><br><span style="color: #f56565;">লগইন করার পর অবশ্যই পাসওয়ার্ড পরিবর্তন করুন!</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminPage" class="page">
+            <div class="app-header">
+                <h1>📝 ফর্ম বিল্ডার - অ্যাডমিন প্যানেল</h1>
+                <div class="header-buttons">
+                    <button class="btn btn-success" onclick="createNewForm()">➕ নতুন ফর্ম তৈরি করুন</button>
+                    <button class="btn btn-warning" onclick="openChangePasswordModal()">🔐 পাসওয়ার্ড পরিবর্তন</button>
+                    <button class="btn btn-danger" onclick="logoutAdmin()">🚪 লগ আউট</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>মোট ফর্ম</h3>
+                        <div class="number" id="statTotalForms">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>মোট রেসপন্স</h3>
+                        <div class="number" id="statTotalResponses">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>আজকের রেসপন্স</h3>
+                        <div class="number" id="statTodayResponses">0</div>
+                    </div>
+                </div>
+
+                <h2 style="color: #2d3748; margin-bottom: 20px;">সকল ফর্ম</h2>
+                <div id="formsListContainer"></div>
+            </div>
+        </div>
+
+        <!-- Form Builder Page -->
+        <div id="builderPage" class="page">
+            <div class="app-header">
+                <h1>📝 ফর্ম তৈরি/সম্পাদনা করুন</h1>
+                <div class="header-buttons">
+                    <button class="btn btn-success" onclick="saveCurrentForm()">💾 সংরক্ষণ করুন</button>
+                    <button class="btn btn-secondary" onclick="backToAdmin()">❌ বাতিল</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="form-group">
+                    <label>ফর্মের শিরোনাম <span style="color: #f56565;">*</span></label>
+                    <input type="text" id="builderFormTitle" placeholder="আপনার ফর্মের শিরোনাম লিখুন">
+                </div>
+
+                <div class="form-group">
+                    <label>ফর্মের বিবরণ (ঐচ্ছিক)</label>
+                    <textarea id="builderFormDesc" rows="3" placeholder="ফর্ম সম্পর্কে বিস্তারিত লিখুন"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>ফর্মের হেডার ছবি (ঐচ্ছিক)</label>
+                    <label for="builderHeaderImage" class="file-upload-label">📷 ছবি আপলোড করুন</label>
+                    <input type="file" id="builderHeaderImage" accept="image/*" onchange="handleHeaderImageUpload(event)">
+                    <div id="headerImagePreview"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="color: #2d3748; margin-bottom: 20px;">প্রশ্নসমূহ</h3>
+                <div id="questionsList"></div>
+                <button class="add-question-btn" onclick="addNewQuestion()">
+                    <span style="font-size: 24px;">➕</span>
+                    <span>নতুন প্রশ্ন যোগ করুন</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Fill Page (Public) -->
+        <div id="fillPage" class="page">
+            <div class="form-fill-wrapper">
+                <div class="success-alert" id="submitSuccess">
+                    ✅ আপনার উত্তর সফলভাবে জমা দেওয়া হয়েছে! ধন্যবাদ।
+                </div>
+                <div id="fillFormContainer"></div>
+            </div>
+        </div>
+
+        <!-- Responses Page -->
+        <div id="responsesPage" class="page">
+            <div class="app-header">
+                <h1 id="responsesPageTitle">রেসপন্স দেখুন</h1>
+                <div class="header-buttons">
+                    <button class="btn btn-primary" onclick="exportCurrentResponses()">📥 CSV ডাউনলোড</button>
+                    <button class="btn btn-secondary" onclick="backToAdmin()">🔙 ফিরে যান</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div id="responsesListContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>📤 ফর্ম শেয়ার করুন</h3>
+                <button class="modal-close" onclick="closeShareModal()">&times;</button>
+            </div>
+            <p style="color: #718096; margin-bottom: 15px;">নিচের লিংকটি কপি করে WhatsApp, Messenger, বা যেকোনো জায়গায় শেয়ার করুন:</p>
+            <div class="share-link-container">
+                <label style="font-weight: 600; color: #2d3748; margin-bottom: 8px; display: block;">ফর্ম লিংক:</label>
+                <input type="text" id="shareLinkInput" readonly style="font-size: 13px;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="copyShareLink()">📋 লিংক কপি করুন</button>
+            </div>
+            <p id="copySuccessMsg" style="color: #48bb78; margin-top: 10px; display: none; text-align: center; font-weight: 600;">✅ লিংক কপি হয়েছে! এখন WhatsApp বা Messenger এ পেস্ট করুন</p>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #718096; font-size: 14px; margin-bottom: 10px;">💡 <strong>কিভাবে শেয়ার করবেন:</strong></p>
+                <ol style="color: #718096; font-size: 14px; padding-left: 20px;">
+                    <li>উপরের "লিংক কপি করুন" বাটনে ক্লিক করুন</li>
+                    <li>WhatsApp, Messenger বা Facebook খুলুন</li>
+                    <li>যাকে পাঠাতে চান তার চ্যাটে লিংকটি পেস্ট করুন</li>
+                    <li>লিংকে ক্লিক করলেই ফর্ম খুলে যাবে</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>🔐 পাসওয়ার্ড পরিবর্তন করুন</h3>
+                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label>বর্তমান পাসওয়ার্ড <span style="color: #f56565;">*</span></label>
+                <input type="password" id="currentPassword" placeholder="বর্তমান পাসওয়ার্ড লিখুন">
+            </div>
+
+            <div class="form-group">
+                <label>নতুন পাসওয়ার্ড <span style="color: #f56565;">*</span></label>
+                <input type="password" id="newPassword" placeholder="নতুন পাসওয়ার্ড লিখুন (কমপক্ষে ৬ অক্ষর)">
+            </div>
+
+            <div class="form-group">
+                <label>নতুন পাসওয়ার্ড নিশ্চিত করুন <span style="color: #f56565;">*</span></label>
+                <input type="password" id="confirmPassword" placeholder="আবার নতুন পাসওয়ার্ড লিখুন">
+            </div>
+
+            <div id="passwordChangeError" style="color: #f56565; margin-bottom: 15px; display: none; padding: 10px; background: #fff5f5; border-radius: 6px;"></div>
+            <div id="passwordChangeSuccess" style="color: #48bb78; margin-bottom: 15px; display: none; padding: 10px; background: #f0fff4; border-radius: 6px;"></div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" style="flex: 1;" onclick="changeAdminPassword()">✅ পরিবর্তন করুন</button>
+                <button class="btn btn-secondary" onclick="closeChangePasswordModal()">বাতিল</button>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="color: #718096; font-size: 14px; margin-bottom: 10px;">💡 <strong>নিরাপত্তা টিপস:</strong></p>
+                <ul style="color: #718096; font-size: 13px; padding-left: 20px;">
+                    <li>কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড ব্যবহার করুন</li>
+                    <li>সংখ্যা এবং বিশেষ চিহ্ন যোগ করুন</li>
+                    <li>সহজ পাসওয়ার্ড (যেমন: 123456) ব্যবহার করবেন না</li>
+                    <li>পাসওয়ার্ড নিয়মিত পরিবর্তন করুন</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <script>
+        // ==================== FIREBASE CONFIGURATION ====================
+        // ✅ Firebase Configuration Ready!
+        const firebaseConfig = {
+            apiKey: "AIzaSyA43tJAceOh_nIzKeUZhkhH97ROus7ScnA",
+            authDomain: "myformbuilder-201aa.firebaseapp.com",
+            projectId: "myformbuilder-201aa",
+            storageBucket: "myformbuilder-201aa.firebasestorage.app",
+            messagingSenderId: "895746791294",
+            appId: "1:895746791294:web:d41835deed251d1e90c52f",
+            measurementId: "G-D41ENCQREW"
+        };
+
+        // Initialize Firebase
+        let app, auth, db, storage;
+        let currentUser = null;
+
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            storage = firebase.storage();
+            console.log('✅ Firebase initialized successfully');
+        } catch (error) {
+            console.error('❌ Firebase initialization error:', error);
+            alert('Firebase সেটআপ সমস্যা! দয়া করে কনফিগারেশন চেক করুন।');
+        }
+
+        // ==================== GLOBAL VARIABLES ====================
+        let currentEditingFormId = null;
+        let currentViewingFormId = null;
+        let questionIdCounter = 0;
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // ==================== AUTHENTICATION ====================
+        async function signInAnonymously() {
+            try {
+                await auth.signInAnonymously();
+                currentUser = auth.currentUser;
+                return true;
+            } catch (error) {
+                console.error('Auth error:', error);
+                return false;
+            }
+        }
+
+        // ==================== PASSWORD MANAGEMENT ====================
+        async function getAdminPassword() {
+            try {
+                const doc = await db.collection('admin').doc('password').get();
+                if (doc.exists) {
+                    return doc.data().password;
+                }
+                return 'admin123'; // Default
+            } catch (error) {
+                console.error('Error getting password:', error);
+                return 'admin123';
+            }
+        }
+
+        async function setAdminPassword(newPassword) {
+            try {
+                if (!currentUser) await signInAnonymously();
+                await db.collection('admin').doc('password').set({
+                    password: newPassword,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return true;
+            } catch (error) {
+                console.error('Error setting password:', error);
+                return false;
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            showLoading();
+            
+            // Check for public form link
+            const urlParams = new URLSearchParams(window.location.search);
+            const formId = urlParams.get('form');
+            
+            if (formId) {
+                // Public form access
+                await checkForPublicForm();
+            } else {
+                // Admin access
+                checkIfLoggedIn();
+            }
+            
+            updatePasswordHint();
+            hideLoading();
+        });
+
+        function checkIfLoggedIn() {
+            const isLoggedIn = sessionStorage.getItem('adminLoggedIn') === 'true';
+            if (isLoggedIn) {
+                showAdminDashboard();
+            }
+        }
+
+        async function updatePasswordHint() {
+            const hint = document.getElementById('defaultPasswordHint');
+            if (hint) {
+                const password = await getAdminPassword();
+                if (password !== 'admin123') {
+                    hint.style.display = 'none';
+                }
+            }
+        }
+
+        // ==================== LOGIN ====================
+        async function attemptLogin() {
+            showLoading();
+            const password = document.getElementById('loginPassword').value;
+            const adminPassword = await getAdminPassword();
+            
+            if (password === adminPassword) {
+                sessionStorage.setItem('adminLoggedIn', 'true');
+                await signInAnonymously();
+                showAdminDashboard();
+            } else {
+                alert('❌ ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।');
+                document.getElementById('loginPassword').value = '';
+            }
+            hideLoading();
+        }
+
+        function logoutAdmin() {
+            if (confirm('আপনি কি লগ আউট করতে চান?')) {
+                sessionStorage.removeItem('adminLoggedIn');
+                auth.signOut();
+                showPage('loginPage');
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        // ==================== PASSWORD CHANGE ====================
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('active');
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('passwordChangeError').style.display = 'none';
+            document.getElementById('passwordChangeSuccess').style.display = 'none';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('active');
+        }
+
+        async function changeAdminPassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const errorDiv = document.getElementById('passwordChangeError');
+            const successDiv = document.getElementById('passwordChangeSuccess');
+            
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                errorDiv.textContent = '❌ সকল ফিল্ড পূরণ করুন!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            showLoading();
+            const adminPassword = await getAdminPassword();
+
+            if (currentPassword !== adminPassword) {
+                errorDiv.textContent = '❌ বর্তমান পাসওয়ার্ড ভুল!';
+                errorDiv.style.display = 'block';
+                hideLoading();
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                errorDiv.textContent = '❌ নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে!';
+                errorDiv.style.display = 'block';
+                hideLoading();
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                errorDiv.textContent = '❌ নতুন পাসওয়ার্ড এবং নিশ্চিতকরণ পাসওয়ার্ড মিলছে না!';
+                errorDiv.style.display = 'block';
+                hideLoading();
+                return;
+            }
+
+            if (newPassword === currentPassword) {
+                errorDiv.textContent = '❌ নতুন পাসওয়ার্ড বর্তমান পাসওয়ার্ডের থেকে আলাদা হতে হবে!';
+                errorDiv.style.display = 'block';
+                hideLoading();
+                return;
+            }
+
+            const success = await setAdminPassword(newPassword);
+            hideLoading();
+
+            if (success) {
+                successDiv.textContent = '✅ পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে!';
+                successDiv.style.display = 'block';
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                setTimeout(() => {
+                    closeChangePasswordModal();
+                }, 2000);
+            } else {
+                errorDiv.textContent = '❌ পাসওয়ার্ড পরিবর্তনে সমস্যা হয়েছে!';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // ==================== PUBLIC FORM ACCESS ====================
+        async function checkForPublicForm() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const formId = urlParams.get('form');
+            
+            if (formId) {
+                showLoading();
+                const form = await getFormById(formId);
+                hideLoading();
+
+                if (form) {
+                    document.getElementById('loginPage').classList.remove('active');
+                    document.getElementById('adminPage').classList.remove('active');
+                    document.getElementById('builderPage').classList.remove('active');
+                    document.getElementById('responsesPage').classList.remove('active');
+                    
+                    const appHeaders = document.querySelectorAll('.app-header');
+                    appHeaders.forEach(header => header.style.display = 'none');
+                    
+                    renderPublicFormFill(formId, form);
+                } else {
+                    document.getElementById('loginPage').classList.remove('active');
+                    document.getElementById('fillPage').classList.add('active');
+                    document.getElementById('fillFormContainer').innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px;">
+                            <div style="font-size: 64px; margin-bottom: 20px;">❌</div>
+                            <h2 style="color: #2d3748; margin-bottom: 10px;">ফর্ম পাওয়া যায়নি</h2>
+                            <p style="color: #718096;">এই ফর্মটি মুছে ফেলা হয়েছে বা লিংকটি ভুল।</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // ==================== ADMIN DASHBOARD ====================
+        async function showAdminDashboard() {
+            showPage('adminPage');
+            await loadAdminStats();
+            await loadFormsList();
+        }
+
+        function backToAdmin() {
+            currentEditingFormId = null;
+            showAdminDashboard();
+        }
+
+        async function loadAdminStats() {
+            showLoading();
+            try {
+                const formsSnapshot = await db.collection('forms').get();
+                const responsesSnapshot = await db.collection('responses').get();
+                
+                document.getElementById('statTotalForms').textContent = formsSnapshot.size;
+                document.getElementById('statTotalResponses').textContent = responsesSnapshot.size;
+                
+                const today = new Date().toDateString();
+                let todayCount = 0;
+                responsesSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.timestamp && new Date(data.timestamp.toDate()).toDateString() === today) {
+                        todayCount++;
+                    }
+                });
+                document.getElementById('statTodayResponses').textContent = todayCount;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+            hideLoading();
+        }
+
+        async function loadFormsList() {
+            const container = document.getElementById('formsListContainer');
+            
+            showLoading();
+            try {
+                const snapshot = await db.collection('forms').orderBy('createdAt', 'desc').get();
+                
+                if (snapshot.empty) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <h3>এখনও কোন ফর্ম তৈরি করা হয়নি</h3>
+                            <p>নতুন ফর্ম তৈরি করতে উপরের বাটনে ক্লিক করুন</p>
+                        </div>
+                    `;
+                    hideLoading();
+                    return;
+                }
+
+                container.innerHTML = '<div class="forms-grid"></div>';
+                const grid = container.querySelector('.forms-grid');
+
+                for (const doc of snapshot.docs) {
+                    const form = { id: doc.id, ...doc.data() };
+                    const responsesCount = await getFormResponsesCount(form.id);
+                    
+                    const formItem = document.createElement('div');
+                    formItem.className = 'form-item';
+                    formItem.innerHTML = `
+                        <div class="form-item-header">
+                            <h3>${form.title}</h3>
+                            <p>${form.description || 'কোন বিবরণ নেই'}</p>
+                        </div>
+                        <div class="form-item-meta">
+                            📊 ${responsesCount} টি রেসপন্স | 
+                            📅 তৈরি: ${form.createdAt ? new Date(form.createdAt.toDate()).toLocaleDateString('bn-BD') : 'N/A'}
+                        </div>
+                        <div class="form-item-actions">
+                            <button class="btn btn-warning btn-sm" onclick="openShareModal('${form.id}')">📤 শেয়ার</button>
+                            <button class="btn btn-info btn-sm" onclick="previewForm('${form.id}')">👁️ প্রিভিউ</button>
+                            <button class="btn btn-primary btn-sm" onclick="viewFormResponses('${form.id}')">📊 রেসপন্স (${responsesCount})</button>
+                            <button class="btn btn-secondary btn-sm" onclick="editForm('${form.id}')">✏️ এডিট</button>
+                            <button class="btn btn-secondary btn-sm" onclick="duplicateForm('${form.id}')">📋 কপি</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteForm('${form.id}')">🗑️ মুছুন</button>
+                        </div>
+                    `;
+                    grid.appendChild(formItem);
+                }
+            } catch (error) {
+                console.error('Error loading forms:', error);
+                container.innerHTML = '<p style="color: #f56565;">ফর্ম লোড করতে সমস্যা হয়েছে!</p>';
+            }
+            hideLoading();
+        }
+
+        // ==================== FIRESTORE OPERATIONS ====================
+        async function getFormById(formId) {
+            try {
+                const doc = await db.collection('forms').doc(formId).get();
+                if (doc.exists) {
+                    return { id: doc.id, ...doc.data() };
+                }
+                return null;
+            } catch (error) {
+                console.error('Error getting form:', error);
+                return null;
+            }
+        }
+
+        async function getFormResponsesCount(formId) {
+            try {
+                const snapshot = await db.collection('responses').where('formId', '==', formId).get();
+                return snapshot.size;
+            } catch (error) {
+                console.error('Error counting responses:', error);
+                return 0;
+            }
+        }
+
+        async function getFormResponses(formId) {
+            try {
+                const snapshot = await db.collection('responses')
+                    .where('formId', '==', formId)
+                    .orderBy('timestamp', 'desc')
+                    .get();
+                
+                const responses = [];
+                snapshot.forEach(doc => {
+                    responses.push({ id: doc.id, ...doc.data() });
+                });
+                return responses;
+            } catch (error) {
+                console.error('Error getting responses:', error);
+                return [];
+            }
+        }
+
+        // ==================== SHARE MODAL ====================
+        function openShareModal(formId) {
+            const currentUrl = window.location.href.split('?')[0];
+            const shareUrl = currentUrl + '?form=' + formId;
+            document.getElementById('shareLinkInput').value = shareUrl;
+            document.getElementById('shareModal').classList.add('active');
+            document.getElementById('copySuccessMsg').style.display = 'none';
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('shareLinkInput');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    showCopySuccess();
+                }).catch(() => {
+                    document.execCommand('copy');
+                    showCopySuccess();
+                });
+            } else {
+                document.execCommand('copy');
+                showCopySuccess();
+            }
+        }
+
+        function showCopySuccess() {
+            const msg = document.getElementById('copySuccessMsg');
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+
+        // ==================== FORM BUILDER ====================
+        function createNewForm() {
+            currentEditingFormId = null;
+            questionIdCounter = 0;
+            
+            document.getElementById('builderFormTitle').value = '';
+            document.getElementById('builderFormDesc').value = '';
+            document.getElementById('builderHeaderImage').value = '';
+            document.getElementById('headerImagePreview').innerHTML = '';
+            document.getElementById('questionsList').innerHTML = '';
+            
+            addNewQuestion();
+            showPage('builderPage');
+        }
+
+        async function editForm(formId) {
+            showLoading();
+            const form = await getFormById(formId);
+            hideLoading();
+
+            if (!form) return;
+
+            currentEditingFormId = formId;
+            questionIdCounter = 0;
+
+            document.getElementById('builderFormTitle').value = form.title;
+            document.getElementById('builderFormDesc').value = form.description || '';
+            
+            if (form.headerImage) {
+                document.getElementById('headerImagePreview').innerHTML = `
+                    <div class="image-preview-box">
+                        <img src="${form.headerImage}">
+                        <button class="btn btn-danger btn-sm" onclick="removeHeaderImage()">ছবি মুছুন</button>
+                    </div>
+                `;
+            } else {
+                document.getElementById('headerImagePreview').innerHTML = '';
+            }
+
+            document.getElementById('questionsList').innerHTML = '';
+            if (form.questions) {
+                form.questions.forEach(q => {
+                    addNewQuestion(q);
+                });
+            } else {
+                addNewQuestion();
+            }
+
+            showPage('builderPage');
+        }
+
+        async function duplicateForm(formId) {
+            if (!confirm('এই ফর্মের কপি তৈরি করতে চান?')) return;
+
+            showLoading();
+            const form = await getFormById(formId);
+            
+            if (form) {
+                delete form.id;
+                form.title = form.title + ' (কপি)';
+                form.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                form.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+
+                try {
+                    if (!currentUser) await signInAnonymously();
+                    await db.collection('forms').add(form);
+                    await loadFormsList();
+                    alert('✅ ফর্ম কপি করা হয়েছে!');
+                } catch (error) {
+                    console.error('Error duplicating form:', error);
+                    alert('❌ ফর্ম কপি করতে সমস্যা হয়েছে!');
+                }
+            }
+            hideLoading();
+        }
+
+        async function deleteForm(formId) {
+            if (!confirm('আপনি কি এই ফর্ম মুছে ফেলতে চান? এর সাথে সব রেসপন্সও মুছে যাবে।')) return;
+
+            showLoading();
+            try {
+                if (!currentUser) await signInAnonymously();
+                
+                // Delete form
+                await db.collection('forms').doc(formId).delete();
+                
+                // Delete all responses
+                const responsesSnapshot = await db.collection('responses').where('formId', '==', formId).get();
+                const deletePromises = [];
+                responsesSnapshot.forEach(doc => {
+                    deletePromises.push(doc.ref.delete());
+                });
+                await Promise.all(deletePromises);
+                
+                await loadAdminStats();
+                await loadFormsList();
+                alert('✅ ফর্ম মুছে ফেলা হয়েছে!');
+            } catch (error) {
+                console.error('Error deleting form:', error);
+                alert('❌ ফর্ম মুছতে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        function previewForm(formId) {
+            window.open(window.location.href.split('?')[0] + '?form=' + formId, '_blank');
+        }
+
+        // ==================== IMAGE UPLOAD ====================
+        async function uploadImageToStorage(file, path) {
+            try {
+                const storageRef = storage.ref();
+                const imageRef = storageRef.child(path);
+                await imageRef.put(file);
+                const downloadURL = await imageRef.getDownloadURL();
+                return downloadURL;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                return null;
+            }
+        }
+
+        async function handleHeaderImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ছবি ৫MB এর চেয়ে ছোট হতে হবে!');
+                return;
+            }
+
+            showLoading();
+            if (!currentUser) await signInAnonymously();
+            
+            const timestamp = Date.now();
+            const uploadPath = `headers/${timestamp}_${file.name}`;
+            const imageUrl = await uploadImageToStorage(file, uploadPath);
+            
+            if (imageUrl) {
+                document.getElementById('headerImagePreview').innerHTML = `
+                    <div class="image-preview-box">
+                        <img src="${imageUrl}">
+                        <button class="btn btn-danger btn-sm" onclick="removeHeaderImage()">ছবি মুছুন</button>
+                    </div>
+                `;
+            } else {
+                alert('ছবি আপলোড করতে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        function removeHeaderImage() {
+            document.getElementById('builderHeaderImage').value = '';
+            document.getElementById('headerImagePreview').innerHTML = '';
+        }
+
+        async function handleQuestionImageUpload(event, qId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ছবি ৫MB এর চেয়ে ছোট হতে হবে!');
+                return;
+            }
+
+            showLoading();
+            if (!currentUser) await signInAnonymously();
+            
+            const timestamp = Date.now();
+            const uploadPath = `questions/${timestamp}_${file.name}`;
+            const imageUrl = await uploadImageToStorage(file, uploadPath);
+            
+            if (imageUrl) {
+                document.getElementById(qId + '_imgPreview').innerHTML = `
+                    <div class="image-preview-box">
+                        <img src="${imageUrl}">
+                        <input type="text" class="q-img-desc" placeholder="ছবির বিবরণ (ঐচ্ছিক)" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #cbd5e0; border-radius: 6px;">
+                        <button class="btn btn-danger btn-sm" onclick="removeQuestionImage('${qId}')">ছবি মুছুন</button>
+                    </div>
+                `;
+            } else {
+                alert('ছবি আপলোড করতে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        function removeQuestionImage(qId) {
+            document.getElementById(qId + '_img').value = '';
+            document.getElementById(qId + '_imgPreview').innerHTML = '';
+        }
+
+        // ==================== QUESTION BUILDER ====================
+        function addNewQuestion(questionData = null) {
+            questionIdCounter++;
+            const qId = 'question_' + questionIdCounter;
+            
+            const questionsList = document.getElementById('questionsList');
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            questionDiv.id = qId;
+            
+            const type = questionData?.type || 'short';
+            const text = questionData?.text || '';
+            const required = questionData?.required || false;
+            const image = questionData?.image || null;
+            const imageDesc = questionData?.imageDescription || '';
+            const options = questionData?.options || [];
+
+            questionDiv.innerHTML = `
+                <div class="question-header">
+                    <input type="text" class="q-text" placeholder="প্রশ্ন লিখুন" value="${text}">
+                    <select class="q-type" onchange="updateQuestionType('${qId}')">
+                        <option value="short" ${type === 'short' ? 'selected' : ''}>সংক্ষিপ্ত উত্তর</option>
+                        <option value="long" ${type === 'long' ? 'selected' : ''}>দীর্ঘ উত্তর</option>
+                        <option value="radio" ${type === 'radio' ? 'selected' : ''}>একটি নির্বাচন</option>
+                        <option value="checkbox" ${type === 'checkbox' ? 'selected' : ''}>একাধিক নির্বাচন</option>
+                        <option value="dropdown" ${type === 'dropdown' ? 'selected' : ''}>ড্রপডাউন</option>
+                    </select>
+                </div>
+
+                <div class="question-image-section">
+                    <label for="${qId}_img" class="file-upload-label">📷 ছবি আপলোড (ঐচ্ছিক)</label>
+                    <input type="file" id="${qId}_img" accept="image/*" onchange="handleQuestionImageUpload(event, '${qId}')">
+                    <div id="${qId}_imgPreview">
+                        ${image ? `
+                            <div class="image-preview-box">
+                                <img src="${image}">
+                                <input type="text" class="q-img-desc" placeholder="ছবির বিবরণ (ঐচ্ছিক)" value="${imageDesc}" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #cbd5e0; border-radius: 6px;">
+                                <button class="btn btn-danger btn-sm" onclick="removeQuestionImage('${qId}')">ছবি মুছুন</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="options-list" id="${qId}_options"></div>
+
+                <div class="question-footer">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" class="q-required" ${required ? 'checked' : ''}>
+                        <span>আবশ্যক প্রশ্ন</span>
+                    </label>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary btn-sm" onclick="duplicateQuestion('${qId}')">📋 কপি</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${qId}')">🗑️ মুছুন</button>
+                    </div>
+                </div>
+            `;
+
+            questionsList.appendChild(questionDiv);
+
+            if (['radio', 'checkbox', 'dropdown'].includes(type)) {
+                showOptionsForQuestion(qId, options);
+            }
+        }
+
+        function updateQuestionType(qId) {
+            const questionDiv = document.getElementById(qId);
+            const type = questionDiv.querySelector('.q-type').value;
+            const optionsContainer = questionDiv.querySelector('.options-list');
+
+            if (['radio', 'checkbox', 'dropdown'].includes(type)) {
+                showOptionsForQuestion(qId);
+            } else {
+                optionsContainer.innerHTML = '';
+            }
+        }
+
+        function showOptionsForQuestion(qId, existingOptions = []) {
+            const optionsContainer = document.getElementById(qId + '_options');
+            optionsContainer.innerHTML = `
+                <div id="${qId}_optionsList"></div>
+                <button class="btn btn-secondary btn-sm" onclick="addOptionToQuestion('${qId}')">➕ অপশন যোগ করুন</button>
+            `;
+
+            if (existingOptions.length > 0) {
+                existingOptions.forEach(opt => {
+                    addOptionToQuestion(qId, opt);
+                });
+            } else {
+                addOptionToQuestion(qId);
+            }
+        }
+
+        function addOptionToQuestion(qId, optionText = '') {
+            const optionsList = document.getElementById(qId + '_optionsList');
+            const optionId = qId + '_opt_' + Date.now();
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option-row';
+            optionDiv.id = optionId;
+            optionDiv.innerHTML = `
+                <span>⚪</span>
+                <input type="text" class="opt-text" placeholder="অপশন টেক্সট" value="${optionText}">
+                <button class="btn btn-danger btn-sm" onclick="removeOption('${optionId}')">✕</button>
+            `;
+            optionsList.appendChild(optionDiv);
+        }
+
+        function removeOption(optionId) {
+            document.getElementById(optionId).remove();
+        }
+
+        function duplicateQuestion(qId) {
+            const originalDiv = document.getElementById(qId);
+            const questionData = extractQuestionData(originalDiv);
+            addNewQuestion(questionData);
+        }
+
+        function deleteQuestion(qId) {
+            const questionsList = document.getElementById('questionsList');
+            if (questionsList.children.length <= 1) {
+                alert('অন্তত একটি প্রশ্ন থাকতে হবে!');
+                return;
+            }
+            document.getElementById(qId).remove();
+        }
+
+        function extractQuestionData(questionDiv) {
+            const type = questionDiv.querySelector('.q-type').value;
+            const text = questionDiv.querySelector('.q-text').value;
+            const required = questionDiv.querySelector('.q-required').checked;
+            
+            const imgPreview = questionDiv.querySelector('.image-preview-box img');
+            const image = imgPreview ? imgPreview.src : null;
+            
+            const imgDescInput = questionDiv.querySelector('.q-img-desc');
+            const imageDescription = imgDescInput ? imgDescInput.value : '';
+
+            const options = [];
+            if (['radio', 'checkbox', 'dropdown'].includes(type)) {
+                questionDiv.querySelectorAll('.opt-text').forEach(opt => {
+                    const val = opt.value.trim();
+                    if (val) options.push(val);
+                });
+            }
+
+            return { type, text, required, image, imageDescription, options };
+        }
+
+        async function saveCurrentForm() {
+            const title = document.getElementById('builderFormTitle').value.trim();
+            if (!title) {
+                alert('ফর্মের শিরোনাম দিন!');
+                return;
+            }
+
+            const description = document.getElementById('builderFormDesc').value.trim();
+            
+            const headerImgPreview = document.querySelector('#headerImagePreview img');
+            const headerImage = headerImgPreview ? headerImgPreview.src : null;
+
+            const questions = [];
+            document.querySelectorAll('.question-item').forEach(qDiv => {
+                const qData = extractQuestionData(qDiv);
+                if (qData.text.trim()) {
+                    questions.push(qData);
+                }
+            });
+
+            if (questions.length === 0) {
+                alert('অন্তত একটি প্রশ্ন যোগ করুন!');
+                return;
+            }
+
+            const formData = {
+                title,
+                description,
+                headerImage,
+                questions,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            showLoading();
+            try {
+                if (!currentUser) await signInAnonymously();
+
+                if (currentEditingFormId) {
+                    await db.collection('forms').doc(currentEditingFormId).update(formData);
+                } else {
+                    formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await db.collection('forms').add(formData);
+                }
+
+                alert('✅ ফর্ম সংরক্ষিত হয়েছে!');
+                backToAdmin();
+            } catch (error) {
+                console.error('Error saving form:', error);
+                alert('❌ ফর্ম সংরক্ষণে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        // ==================== PUBLIC FORM FILL ====================
+        function renderPublicFormFill(formId, form) {
+            currentViewingFormId = formId;
+            const container = document.getElementById('fillFormContainer');
+
+            let html = '';
+
+            html += `<div class="form-header-section">`;
+            if (form.headerImage) {
+                html += `<img src="${form.headerImage}">`;
+            }
+            html += `<h1>${form.title}</h1>`;
+            if (form.description) {
+                html += `<p>${form.description}</p>`;
+            }
+            html += `</div>`;
+
+            if (form.questions) {
+                form.questions.forEach((q, idx) => {
+                    html += `<div class="fill-question-item">`;
+                    html += `<div class="question-label">${q.text}`;
+                    if (q.required) {
+                        html += `<span class="required-mark">*</span>`;
+                    }
+                    html += `</div>`;
+
+                    if (q.image) {
+                        html += `<img src="${q.image}">`;
+                        if (q.imageDescription) {
+                            html += `<div class="image-desc">${q.imageDescription}</div>`;
+                        }
+                    }
+
+                    if (q.type === 'short') {
+                        html += `<input type="text" class="answer-input" data-idx="${idx}" ${q.required ? 'required' : ''}>`;
+                    } else if (q.type === 'long') {
+                        html += `<textarea class="answer-input" data-idx="${idx}" ${q.required ? 'required' : ''}></textarea>`;
+                    } else if (q.type === 'radio') {
+                        html += `<div class="radio-group">`;
+                        q.options.forEach(opt => {
+                            html += `
+                                <label class="choice-option">
+                                    <input type="radio" name="q${idx}" value="${opt}" class="answer-input" data-idx="${idx}" ${q.required ? 'required' : ''}>
+                                    <span>${opt}</span>
+                                </label>
+                            `;
+                        });
+                        html += `</div>`;
+                    } else if (q.type === 'checkbox') {
+                        html += `<div class="checkbox-group">`;
+                        q.options.forEach(opt => {
+                            html += `
+                                <label class="choice-option">
+                                    <input type="checkbox" value="${opt}" class="answer-checkbox" data-idx="${idx}">
+                                    <span>${opt}</span>
+                                </label>
+                            `;
+                        });
+                        html += `</div>`;
+                    } else if (q.type === 'dropdown') {
+                        html += `<select class="answer-input" data-idx="${idx}" ${q.required ? 'required' : ''} style="width: 100%; padding: 12px; border: 1px solid #cbd5e0; border-radius: 6px;">
+                            <option value="">নির্বাচন করুন</option>`;
+                        q.options.forEach(opt => {
+                            html += `<option value="${opt}">${opt}</option>`;
+                        });
+                        html += `</select>`;
+                    }
+
+                    html += `</div>`;
+                });
+            }
+
+            html += `<div style="margin-top: 20px; text-align: center;">`;
+            html += `<button class="btn btn-success" style="padding: 15px 40px; font-size: 16px;" onclick="submitFormResponse()">জমা দিন</button>`;
+            html += `</div>`;
+
+            container.innerHTML = html;
+            document.getElementById('submitSuccess').classList.remove('show');
+            showPage('fillPage');
+        }
+
+        async function submitFormResponse() {
+            showLoading();
+            const form = await getFormById(currentViewingFormId);
+            hideLoading();
+
+            if (!form) {
+                alert('ফর্ম লোড করতে সমস্যা হয়েছে!');
+                return;
+            }
+
+            const answers = [];
+
+            for (let i = 0; i < form.questions.length; i++) {
+                const q = form.questions[i];
+
+                if (q.type === 'checkbox') {
+                    const checked = Array.from(document.querySelectorAll(`.answer-checkbox[data-idx="${i}"]:checked`))
+                        .map(cb => cb.value);
+                    
+                    if (q.required && checked.length === 0) {
+                        alert(`"${q.text}" প্রশ্নের উত্তর আবশ্যক!`);
+                        return;
+                    }
+                    answers.push(checked.join(', '));
+                } else {
+                    let value = '';
+                    if (q.type === 'radio') {
+                        const checked = document.querySelector(`input[name="q${i}"]:checked`);
+                        value = checked ? checked.value : '';
+                    } else {
+                        const input = document.querySelector(`.answer-input[data-idx="${i}"]`);
+                        value = input ? input.value.trim() : '';
+                    }
+
+                    if (q.required && !value) {
+                        alert(`"${q.text}" প্রশ্নের উত্তর আবশ্যক!`);
+                        return;
+                    }
+                    answers.push(value);
+                }
+            }
+
+            const response = {
+                formId: currentViewingFormId,
+                answers,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            showLoading();
+            try {
+                await db.collection('responses').add(response);
+                
+                document.getElementById('submitSuccess').classList.add('show');
+                document.getElementById('fillFormContainer').innerHTML = '';
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const isPublicForm = urlParams.get('form');
+
+                if (isPublicForm) {
+                    setTimeout(() => {
+                        document.getElementById('fillFormContainer').innerHTML = `
+                            <div style="text-align: center; padding: 60px 20px;">
+                                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                                <h2 style="color: #2d3748; margin-bottom: 10px;">ধন্যবাদ!</h2>
+                                <p style="color: #718096;">আপনার উত্তর সফলভাবে জমা দেওয়া হয়েছে</p>
+                                <button class="btn btn-primary" style="margin-top: 20px;" onclick="location.reload()">আরেকটি রেসপন্স জমা দিন</button>
+                            </div>
+                        `;
+                        document.getElementById('submitSuccess').classList.remove('show');
+                    }, 2000);
+                } else {
+                    setTimeout(() => {
+                        backToAdmin();
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Error submitting response:', error);
+                alert('❌ রেসপন্স জমা দিতে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        // ==================== RESPONSES VIEW ====================
+        async function viewFormResponses(formId) {
+            showLoading();
+            const form = await getFormById(formId);
+            const responses = await getFormResponses(formId);
+
+            currentViewingFormId = formId;
+            document.getElementById('responsesPageTitle').textContent = `"${form.title}" এর রেসপন্স (${responses.length})`;
+
+            const container = document.getElementById('responsesListContainer');
+
+            if (responses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <h3>এখনও কোন রেসপন্স আসেনি</h3>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = '';
+                responses.forEach((resp, idx) => {
+                    const respDiv = document.createElement('div');
+                    respDiv.className = 'response-item';
+
+                    let html = `
+                        <div class="response-header">
+                            <strong style="color: #2d3748;">রেসপন্স #${idx + 1}</strong>
+                            <span style="color: #718096;">${resp.timestamp ? new Date(resp.timestamp.toDate()).toLocaleString('bn-BD') : 'N/A'}</span>
+                        </div>
+                        <div class="response-content">
+                    `;
+
+                    form.questions.forEach((q, qIdx) => {
+                        html += `
+                            <div class="response-qa">
+                                <div class="q">${q.text}</div>
+                                <div class="a">${resp.answers[qIdx] || 'উত্তর দেওয়া হয়নি'}</div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                    html += `<div style="text-align: right; margin-top: 15px;">
+                        <button class="btn btn-danger btn-sm" onclick="deleteResponse('${resp.id}', '${formId}')">🗑️ মুছুন</button>
+                    </div>`;
+
+                    respDiv.innerHTML = html;
+                    container.appendChild(respDiv);
+                });
+            }
+
+            hideLoading();
+            showPage('responsesPage');
+        }
+
+        async function deleteResponse(respId, formId) {
+            if (!confirm('এই রেসপন্স মুছে ফেলতে চান?')) return;
+
+            showLoading();
+            try {
+                if (!currentUser) await signInAnonymously();
+                await db.collection('responses').doc(respId).delete();
+                await viewFormResponses(formId);
+            } catch (error) {
+                console.error('Error deleting response:', error);
+                alert('❌ রেসপন্স মুছতে সমস্যা হয়েছে!');
+            }
+            hideLoading();
+        }
+
+        async function exportCurrentResponses() {
+            showLoading();
+            const form = await getFormById(currentViewingFormId);
+            const responses = await getFormResponses(currentViewingFormId);
+            hideLoading();
+
+            if (responses.length === 0) {
+                alert('কোন রেসপন্স নেই!');
+                return;
+            }
+
+            let csv = '\uFEFF';
+            csv += 'রেসপন্স নং,সময়,';
+            csv += form.questions.map(q => `"${q.text}"`).join(',');
+            csv += '\n';
+
+            responses.forEach((resp, idx) => {
+                csv += `${idx + 1},"${resp.timestamp ? new Date(resp.timestamp.toDate()).toLocaleString('bn-BD') : 'N/A'}",`;
+                csv += resp.answers.map(a => `"${a || ''}"`).join(',');
+                csv += '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${form.title}_responses_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+    </script>
+</body>
+</html>
